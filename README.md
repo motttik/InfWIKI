@@ -301,9 +301,9 @@ MIT License — см. [LICENSE](LICENSE) файл.
 
 ## 📞 Контакты
 
-| 📧 GitHub | 💬 Telegram |
-|-----------|-------------|
-| [@motttik](https://github.com/motttik) | [@motttik](https://t.me/motttik) |
+| 📧 GitHub |
+|-----------|
+| [@motttik](https://github.com/motttik) |
 
 ---
 
@@ -319,7 +319,7 @@ MIT License — см. [LICENSE](LICENSE) файл.
 
 ### ⭐ Если понравился проект — поставь звезду!
 
-**InfWIKI** © 2024 | Сделано с ❤️ для любителей знаний
+**InfWIKI** © 2026 | Сделано с ❤️ для любителей знаний
 
 ```
    _____ _______ _____  ______ _____  
