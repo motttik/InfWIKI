@@ -1,0 +1,79 @@
+{
+  "translation": {
+    "app": {
+      "title": "INFINITE WIKI",
+      "subtitle": "Бесконечная энциклопедия знаний",
+      "tagline": "Кликни на любое слово для погружения в знания"
+    },
+    "search": {
+      "placeholder": "Введите тему для поиска...",
+      "button": "Найти",
+      "random": "🎲 Случайная статья",
+      "suggestions": "Популярные запросы"
+    },
+    "navigation": {
+      "back": "← Назад",
+      "forward": "Вперёд →",
+      "history": "История",
+      "clearHistory": "Очистить историю",
+      "noHistory": "История пуста"
+    },
+    "bookmarks": {
+      "add": "☆ В избранное",
+      "remove": "★ Из избранного",
+      "title": "Избранное",
+      "empty": "Нет избранных статей",
+      "export": "Экспорт",
+      "import": "Импорт",
+      "clear": "Очистить всё"
+    },
+    "export": {
+      "title": "Экспорт",
+      "markdown": "Скачать Markdown",
+      "pdf": "Печать в PDF",
+      "copy": "Копировать текст",
+      "copied": "Скопировано!"
+    },
+    "settings": {
+      "title": "Настройки",
+      "language": "Язык",
+      "theme": "Тема",
+      "themes": {
+        "light": "Светлая",
+        "dark": "Тёмная",
+        "cyberpunk": "Киберпанк"
+      },
+      "showAscii": "Показывать ASCII-арт",
+      "fontSize": "Размер шрифта",
+      "normal": "Нормальный",
+      "large": "Крупный"
+    },
+    "loading": {
+      "generating": "Генерация контента...",
+      "fetching": "Загрузка информации...",
+      "preparing": "Подготовка статьи..."
+    },
+    "error": {
+      "title": "Произошла ошибка",
+      "generic": "Не удалось загрузить контент",
+      "retry": "Попробовать снова",
+      "noContent": "Контент не найден"
+    },
+    "footer": {
+      "author": "Создано",
+      "poweredBy": "Работает на",
+      "generatedIn": "сгенерировано за"
+    },
+    "time": {
+      "ms": "мс",
+      "seconds": "сек",
+      "minutes": "мин"
+    },
+    "words": {
+      "readMore": "Читать далее",
+      "showLess": "Свернуть",
+      "relatedTopics": "Похожие темы",
+      "clickToExplore": "Кликните для изучения"
+    }
+  }
+}

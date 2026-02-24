@@ -1,156 +1,47 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Infinite Wiki</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Kosugi&display=swap" rel="stylesheet">
+    <meta name="description" content="Infinite Wiki — бесконечное путешествие по знаниям с поддержкой русского языка" />
+    <meta name="theme-color" content="#667eea" />
+    <title>InfWIKI — Бесконечная Википедия</title>
+    
+    <!-- Preconnect to fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Google Fonts with Cyrillic support -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    
     <style>
-      @keyframes blink {
-        from, to { opacity: 1 }
-        50% { opacity: 0; }
-      }
-
+      /* Critical CSS for initial load */
       body {
-        background-color: #ffffff;
-        color: #000000;
-        font-family: 'Kosugi', sans-serif;
-        font-size: 1.1rem;
-        line-height: 1.6;
         margin: 0;
-        padding: 2rem 2rem 5rem 2rem;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       }
       #root {
-        max-width: 65ch;
-        margin: auto;
+        min-height: 100vh;
       }
-      h1, h2, h3, h4, h5, h6 {
-        font-size: 1em;
-        margin: 0;
-        font-weight: normal;
-      }
-      button {
-        background: none;
-        border: none;
-        padding: 0;
-        font: inherit;
-        color: inherit;
-        cursor: pointer;
-      }
-      .interactive-word {
-        color: #000000;
-        text-decoration: none;
-        transition: color 0.2s ease-in-out;
-      }
-      .interactive-word:hover {
-        color: #0000ff;
-        text-decoration: underline;
-      }
-      .footer-text {
-        font-size: 0.9em;
-        color: #888;
-      }
-      .footer-text a {
-        color: inherit;
-        text-decoration: none;
-        transition: color 0.2s ease-in-out;
-      }
-      .footer-text a:hover {
-        color: #0000ff;
-        text-decoration: underline;
-      }
-      .ascii-art {
-        font-family: monospace;
-        text-align: left;
-        white-space: pre;
-        color: #888;
-        margin: 2rem 0;
-        line-height: 1.1;
-        font-size: 0.8em;
-      }
-      .blinking-cursor {
-        animation: blink 1s step-end infinite;
-      }
-      
-      .search-container {
+      .loading-screen {
         display: flex;
-        align-items: baseline;
-        gap: 1rem;
-        margin-bottom: 3rem;
-      }
-
-      .search-form {
-        flex-grow: 1;
-      }
-
-      .search-input {
-        width: 100%;
-        padding: 0.5rem 0.2rem;
-        font: inherit;
-        color: inherit;
-        border: none;
-        border-bottom: 1px solid transparent;
-        background-color: transparent;
-        box-sizing: border-box;
-        outline: none;
-      }
-      
-      .search-input:disabled {
-        color: #ccc;
-      }
-
-      .search-input::placeholder {
-        color: #000000;
-        opacity: 1;
-      }
-      
-      .random-button {
-        background: none;
-        border: none;
-        padding: 0.5rem 0;
-        font: inherit;
-        color: #000000;
-        cursor: pointer;
-        white-space: nowrap;
-      }
-      
-      .random-button:hover:not(:disabled) {
-        color: #0000ff;
-      }
-
-      .random-button:disabled {
-        color: #ccc;
-        cursor: not-allowed;
-      }
-
-      .sticky-footer {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        width: 100%;
-        text-align: center;
-        padding: 1.5rem 0;
-        background-color: #ffffff;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-size: 1.5rem;
+        font-weight: 600;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
       }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react/": "https://esm.sh/react@^19.1.0/",
-    "react": "https://esm.sh/react@^19.1.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.7.0"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
-</head>
+  </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+    <div id="root">
+      <div class="loading-screen">InfWIKI</div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

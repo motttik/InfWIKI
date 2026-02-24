@@ -1,0 +1,48 @@
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 0;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+}
+
+.header-left,
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.header-center {
+  flex-grow: 1;
+  text-align: center;
+}
+
+.app-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.language-button {
+  min-width: 3rem;
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .app-title {
+    font-size: 1.25rem;
+  }
+
+  .header-left,
+  .header-right {
+    gap: 0.25rem;
+  }
+}

@@ -1,0 +1,54 @@
+.content-display {
+  font-size: 1.125rem;
+  line-height: 1.8;
+  padding: 1.5rem 0;
+}
+
+.content-display.loading {
+  opacity: 0.8;
+}
+
+.content-text {
+  text-align: justify;
+}
+
+.interactive-word {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px dashed transparent;
+}
+
+.interactive-word:hover {
+  color: #667eea;
+  border-bottom-color: #667eea;
+}
+
+.interactive-word:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.blinking-cursor {
+  animation: blink 1s step-end infinite;
+  color: #667eea;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .content-display {
+    font-size: 1rem;
+  }
+}

@@ -1,0 +1,45 @@
+.ascii-art-container {
+  margin: 2rem 0;
+  display: flex;
+  justify-content: center;
+}
+
+.ascii-art {
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  line-height: 1.1;
+  white-space: pre;
+  color: inherit;
+  opacity: 0.7;
+  overflow-x: auto;
+  padding: 1rem;
+  border-radius: 8px;
+  background: rgba(128, 128, 128, 0.05);
+}
+
+.ascii-art-placeholder {
+  width: 200px;
+  height: 100px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(128, 128, 128, 0.1) 50%,
+    transparent 100%
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (max-width: 640px) {
+  .ascii-art {
+    font-size: 0.625rem;
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "translation": {
+    "app": {
+      "title": "INFINITE WIKI",
+      "subtitle": "Infinite Encyclopedia of Knowledge",
+      "tagline": "Click any word to dive deeper into knowledge"
+    },
+    "search": {
+      "placeholder": "Enter a topic to search...",
+      "button": "Search",
+      "random": "🎲 Random Article",
+      "suggestions": "Popular Searches"
+    },
+    "navigation": {
+      "back": "← Back",
+      "forward": "Forward →",
+      "history": "History",
+      "clearHistory": "Clear History",
+      "noHistory": "No history yet"
+    },
+    "bookmarks": {
+      "add": "☆ Add to Favorites",
+      "remove": "★ Remove from Favorites",
+      "title": "Favorites",
+      "empty": "No favorite articles",
+      "export": "Export",
+      "import": "Import",
+      "clear": "Clear All"
+    },
+    "export": {
+      "title": "Export",
+      "markdown": "Download Markdown",
+      "pdf": "Print to PDF",
+      "copy": "Copy Text",
+      "copied": "Copied!"
+    },
+    "settings": {
+      "title": "Settings",
+      "language": "Language",
+      "theme": "Theme",
+      "themes": {
+        "light": "Light",
+        "dark": "Dark",
+        "cyberpunk": "Cyberpunk"
+      },
+      "showAscii": "Show ASCII Art",
+      "fontSize": "Font Size",
+      "normal": "Normal",
+      "large": "Large"
+    },
+    "loading": {
+      "generating": "Generating content...",
+      "fetching": "Loading information...",
+      "preparing": "Preparing article..."
+    },
+    "error": {
+      "title": "An Error Occurred",
+      "generic": "Failed to load content",
+      "retry": "Try Again",
+      "noContent": "Content not found"
+    },
+    "footer": {
+      "author": "Created by",
+      "poweredBy": "Powered by",
+      "generatedIn": "generated in"
+    },
+    "time": {
+      "ms": "ms",
+      "seconds": "s",
+      "minutes": "min"
+    },
+    "words": {
+      "readMore": "Read more",
+      "showLess": "Show less",
+      "relatedTopics": "Related Topics",
+      "clickToExplore": "Click to explore"
+    }
+  }
+}

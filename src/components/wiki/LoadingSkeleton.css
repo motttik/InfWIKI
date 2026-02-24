@@ -1,0 +1,49 @@
+.loading-skeleton {
+  padding: 1.5rem 0;
+}
+
+.skeleton-line {
+  height: 1rem;
+  margin-bottom: 0.75rem;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    rgba(128, 128, 128, 0.1) 0%,
+    rgba(128, 128, 128, 0.2) 50%,
+    rgba(128, 128, 128, 0.1) 100%
+  );
+  animation: shimmer 1.5s infinite;
+  background-size: 200% 100%;
+}
+
+.skeleton-line-1 {
+  width: 100%;
+}
+
+.skeleton-line-2 {
+  width: 95%;
+}
+
+.skeleton-line-3 {
+  width: 98%;
+}
+
+.skeleton-line-4 {
+  width: 90%;
+}
+
+.skeleton-text {
+  margin-top: 1.5rem;
+  font-size: 0.875rem;
+  opacity: 0.6;
+  text-align: center;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
