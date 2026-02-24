@@ -11,8 +11,32 @@
   min-width: 200px;
 }
 
+.search-buttons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .random-button {
   white-space: nowrap;
+}
+
+.voice-button {
+  font-size: 1.25rem;
+}
+
+.voice-button.listening {
+  animation: pulse 1.5s infinite;
+  color: #ef4444;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
 }
 
 @media (max-width: 640px) {
@@ -23,5 +47,9 @@
 
   .search-form {
     width: 100%;
+  }
+
+  .search-buttons {
+    justify-content: center;
   }
 }

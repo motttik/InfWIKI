@@ -3,9 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Infinite Wiki — бесконечное путешествие по знаниям с поддержкой русского языка" />
     <meta name="theme-color" content="#667eea" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="InfWIKI" />
+    <meta name="application-name" content="InfWIKI" />
+    <meta name="msapplication-TileColor" content="#667eea" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    
     <title>InfWIKI — Бесконечная Википедия</title>
     
     <!-- Preconnect to fonts -->
@@ -14,6 +25,8 @@
     
     <!-- Google Fonts with Cyrillic support -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    
+    <link rel="manifest" href="/manifest.json" />
     
     <style>
       /* Critical CSS for initial load */
