@@ -70,7 +70,7 @@ export async function* streamDefinition(
 ): AsyncGenerator<string, void, undefined> {
   const apiKey = getApiKey()
   if (!apiKey) {
-    yield 'Error: GEMINI_API_KEY is not configured. Please check your environment variables.'
+    yield 'Error: GEMINI_API_KEY не настроен. Проверьте .env файл или используйте демо-режим.'
     return
   }
 
@@ -95,9 +95,25 @@ export async function* streamDefinition(
     }
   } catch (error) {
     console.error('Error streaming from Gemini:', error)
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.'
-    yield `Error: Could not generate content for "${topic}". ${errorMessage}`
-    throw new Error(errorMessage)
+    
+    // Специфичная обработка ошибок
+    let errorMessage = 'An unknown error occurred.'
+    if (error instanceof Error) {
+      if (error.message.includes('401') || error.message.includes('API key')) {
+        errorMessage = 'Невалидный API ключ. Проверьте GEMINI_API_KEY в .env файле.'
+      } else if (error.message.includes('403')) {
+        errorMessage = 'Доступ запрещён. Проверьте квоты API.'
+      } else if (error.message.includes('429')) {
+        errorMessage = 'Превышен лимит запросов. Подождите немного.'
+      } else if (error.message.includes('500')) {
+        errorMessage = 'Сервер Gemini недоступен. Попробуйте позже.'
+      } else {
+        errorMessage = error.message
+      }
+    }
+    
+    yield `Error: ${errorMessage}`
+    // Не выбрасываем ошибку после yield — это вызывает unhandled promise rejection
   }
 }
 

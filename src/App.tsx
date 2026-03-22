@@ -71,8 +71,15 @@ const App: React.FC = () => {
 
           {error && (
             <div className="error-message" role="alert">
-              <p className="error-title">{t('error.title')}</p>
+              <p className="error-title">⚠️ {t('error.title')}</p>
               <p className="error-details">{error}</p>
+              <button 
+                className="btn btn-primary" 
+                onClick={handleRandom}
+                style={{ marginTop: '1rem', padding: '0.75rem 1.5rem' }}
+              >
+                {t('search.random')}
+              </button>
             </div>
           )}
 

@@ -9,11 +9,22 @@ export function useNavigationHistory() {
   const [history, setHistory] = useState<NavigationHistoryItem[]>(() =>
     loadFromStorage<NavigationHistoryItem[]>(HISTORY_STORAGE_KEY, [])
   )
-  const [currentIndex, setCurrentIndex] = useState<number>(-1)
+  const [currentIndex, setCurrentIndex] = useState<number>(() => {
+    // Инициализируем currentIndex на основе сохранённой истории
+    const savedHistory = loadFromStorage<NavigationHistoryItem[]>(HISTORY_STORAGE_KEY, [])
+    return savedHistory.length > 0 ? savedHistory.length - 1 : -1
+  })
 
   useEffect(() => {
     saveToStorage(HISTORY_STORAGE_KEY, history)
   }, [history])
+
+  useEffect(() => {
+    // Синхронизируем currentIndex если история загрузилась позже
+    if (history.length > 0 && currentIndex === -1) {
+      setCurrentIndex(history.length - 1)
+    }
+  }, [history, currentIndex])
 
   const pushToHistory = useCallback((topic: string, content?: string) => {
     setHistory((prev) => {

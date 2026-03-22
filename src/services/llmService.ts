@@ -124,7 +124,7 @@ class GeminiService implements LLMService {
 
   async *streamDefinition(topic: string, language: Language = 'en'): AsyncGenerator<string, void, undefined> {
     await this.initAI()
-    
+
     const promptRu = `Дай краткое, энциклопедическое определение термина "${topic}". Будь информативным и нейтральным. Не используй markdown, заголовки или специальное форматирование. Ответь только текстом определения.`
     const promptEn = `Provide a concise, encyclopedia-style definition for the term: "${topic}". Be informative and neutral. Do not use markdown, titles, or special formatting. Respond with only the definition text.`
     const prompt = language === 'ru' ? promptRu : promptEn
@@ -145,9 +145,25 @@ class GeminiService implements LLMService {
       }
     } catch (error) {
       console.error('Error streaming from Gemini:', error)
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.'
-      yield `Error: Could not generate content for "${topic}". ${errorMessage}`
-      throw new Error(errorMessage)
+      
+      // Специфичная обработка ошибок
+      let errorMessage = 'An unknown error occurred.'
+      if (error instanceof Error) {
+        if (error.message.includes('401') || error.message.includes('API key')) {
+          errorMessage = 'Невалидный API ключ. Проверьте GEMINI_API_KEY в .env файле.'
+        } else if (error.message.includes('403')) {
+          errorMessage = 'Доступ запрещён. Проверьте квоты API.'
+        } else if (error.message.includes('429')) {
+          errorMessage = 'Превышен лимит запросов. Подождите немного.'
+        } else if (error.message.includes('500')) {
+          errorMessage = 'Сервер Gemini недоступен. Попробуйте позже.'
+        } else {
+          errorMessage = error.message
+        }
+      }
+      
+      yield `Error: ${errorMessage}`
+      // Не выбрасываем ошибку после yield
     }
   }
 
@@ -446,11 +462,70 @@ class OllamaService implements LLMService {
 }
 
 /**
+ * Mock Service для демо-режима (работает без API ключа)
+ */
+class MockService implements LLMService {
+  private readonly DEMO_CONTENT: Record<string, string> = {
+    'Гармония': 'Гармония — философская категория, выражающая соразмерность, согласованность и упорядоченность элементов целого. В древнегреческой философии гармония понималась как основа космоса и души.',
+    'Баланс': 'Баланс — состояние равновесия, устойчивости системы. В философии и физике означает равенство действующих сил или противоположных тенденций.',
+    'Спираль': 'Спираль — кривая линия, обвивающая центральную ось и постепенно удаляющаяся от неё. Символ эволюции, развития и циклического движения вперёд.',
+    'Квант': 'Квант — неделимая порция физической величины. В квантовой механике означает дискретность энергии и других физических параметров.',
+    'Поток': 'Поток — непрерывное движение, течение. В психологии — состояние полной вовлечённости в деятельность, в физике — перемещение вещества или энергии.',
+    'Hypertext': 'Hypertext is text displayed on a computer or other electronic device with references (hyperlinks) to other text that the reader can immediately access.',
+    'Balance': 'Balance is a state of equilibrium where different elements are in proper proportion. In philosophy, it represents the harmony between opposing forces.',
+    'Harmony': 'Harmony is a concept expressing agreement, coordination, and pleasant combination of elements. In music, it refers to the combination of simultaneously sounded musical notes.',
+    'Spiral': 'A spiral is a curve which emanates from a point, moving farther away as it revolves around the point. It symbolizes growth, evolution, and cosmic expansion.',
+    'Quantum': 'Quantum is the minimum amount of any physical entity involved in an interaction. Quantum mechanics describes the behavior of matter and energy at atomic scales.',
+    'Flow': 'Flow is the continuous movement or progression of something. In psychology, it describes a state of complete immersion in an activity.',
+  }
+
+  async *streamDefinition(topic: string, language: Language = 'en'): AsyncGenerator<string, void, undefined> {
+    const demoText = this.DEMO_CONTENT[topic] || 
+      (language === 'ru' 
+        ? `Это демо-режим. "${topic}" — концепция, требующая подключения API для полного определения. В реальном режиме здесь будет энциклопедическая информация.`
+        : `This is demo mode. "${topic}" is a concept that requires API connection for full definition. In real mode, encyclopedic information will be displayed here.`)
+    
+    const words = demoText.split(' ')
+    for (const word of words) {
+      yield word + ' '
+      await new Promise(resolve => setTimeout(resolve, 50))
+    }
+  }
+
+  async getRandomWord(language: Language = 'en'): Promise<string> {
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const topics = language === 'ru' 
+      ? ['Гармония', 'Баланс', 'Спираль', 'Квант', 'Поток']
+      : ['Harmony', 'Balance', 'Spiral', 'Quantum', 'Flow']
+    return topics[Math.floor(Math.random() * topics.length)]
+  }
+
+  async generateAsciiArt(topic: string, _language: Language = 'en'): Promise<AsciiArtData> {
+    await new Promise(resolve => setTimeout(resolve, 200))
+    const displayableTopic = topic.length > 20 ? topic.substring(0, 17) + '...' : topic
+    const paddedTopic = ` ${displayableTopic} `
+    const topBorder = `┌${'─'.repeat(paddedTopic.length)}┐`
+    const middle = `│${paddedTopic}│`
+    const bottomBorder = `└${'─'.repeat(paddedTopic.length)}┘`
+    return {
+      art: `${topBorder}\n${middle}\n${bottomBorder}`,
+    }
+  }
+}
+
+/**
  * Фабрика LLM сервисов
  */
 export function createLLMService(config?: LLMProviderConfig): LLMService {
   const provider = config?.provider || 'gemini'
-  
+  const apiKey = getApiKey()
+
+  // Если API ключ не настроен — использовать demo режим
+  if (!apiKey || apiKey === 'your_api_key_here' || apiKey === 'YOUR_API_KEY_HERE') {
+    console.log('🎭 Running in Demo Mode (no API key configured)')
+    return new MockService()
+  }
+
   switch (provider) {
     case 'ollama':
       return new OllamaService()

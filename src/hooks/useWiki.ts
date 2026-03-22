@@ -10,17 +10,21 @@ interface UseWikiOptions {
   llmConfig?: LLMProviderConfig
 }
 
-export function useWiki({ 
-  initialTopic = 'Hypertext', 
-  language = 'en',
+export function useWiki({
+  initialTopic = 'Гармония',
+  language = 'ru',
   llmConfig
 }: UseWikiOptions = {}) {
   const [currentTopic, setCurrentTopic] = useState<string>(initialTopic)
   const [content, setContent] = useState<string>('')
-  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   const [asciiArt, setAsciiArt] = useState<AsciiArtData | null>(null)
   const [generationTime, setGenerationTime] = useState<number | null>(null)
+
+  // Ref для защиты от race conditions
+  const currentTopicRef = useRef<string>(currentTopic)
+  const requestedTopicRef = useRef<string>(initialTopic)
 
   // Создаём LLM сервис с нужной конфигурацией
   const llmService = useRef(createLLMService(llmConfig)).current
@@ -29,9 +33,20 @@ export function useWiki({
   const { pushToHistory, goBack, goForward, canGoBack, canGoForward } = useNavigationHistory()
   const { addBookmark, removeBookmark, isBookmarked } = useBookmarks()
 
+  // Обновляем ref при смене темы
   useEffect(() => {
-    if (!currentTopic) return
+    currentTopicRef.current = currentTopic
+  }, [currentTopic])
 
+  useEffect(() => {
+    if (!currentTopic || !currentTopic.trim()) {
+      setIsLoading(false)
+      setError('Тема не может быть пустой')
+      return
+    }
+
+    const requestedTopic = currentTopic
+    requestedTopicRef.current = requestedTopic
     isCancelledRef.current = false
 
     const fetchContentAndArt = async () => {
@@ -42,15 +57,15 @@ export function useWiki({
       setGenerationTime(null)
       const startTime = performance.now()
 
-      // Generate ASCII art
+      // Generate ASCII art с защитой от race condition
       llmService.generateAsciiArt(currentTopic, language)
         .then((art) => {
-          if (!isCancelledRef.current) {
+          if (!isCancelledRef.current && currentTopicRef.current === requestedTopic) {
             setAsciiArt(art)
           }
         })
         .catch((err) => {
-          if (!isCancelledRef.current) {
+          if (!isCancelledRef.current && currentTopicRef.current === requestedTopic) {
             console.error('Failed to generate ASCII art:', err)
             const fallbackArt = createFallbackArt(currentTopic)
             setAsciiArt(fallbackArt)
@@ -64,25 +79,27 @@ export function useWiki({
           if (isCancelledRef.current) break
 
           if (chunk.startsWith('Error:')) {
-            throw new Error(chunk)
+            throw new Error(chunk.replace('Error: ', ''))
           }
           accumulatedContent += chunk
-          if (!isCancelledRef.current) {
+          if (!isCancelledRef.current && currentTopicRef.current === requestedTopic) {
             setContent(accumulatedContent)
           }
         }
 
         // Push to history after successful load
-        pushToHistory(currentTopic, accumulatedContent)
+        if (!isCancelledRef.current && currentTopicRef.current === requestedTopic) {
+          pushToHistory(currentTopic, accumulatedContent)
+        }
       } catch (e: unknown) {
-        if (!isCancelledRef.current) {
+        if (!isCancelledRef.current && currentTopicRef.current === requestedTopic) {
           const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred'
           setError(errorMessage)
           setContent('')
           console.error(e)
         }
       } finally {
-        if (!isCancelledRef.current) {
+        if (!isCancelledRef.current && currentTopicRef.current === requestedTopic) {
           const endTime = performance.now()
           setGenerationTime(endTime - startTime)
           setIsLoading(false)
