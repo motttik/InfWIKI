@@ -103,44 +103,46 @@ export function useWiki({
     const fetchContentAndArt = async () => {
       setIsLoading(true)
       setError(null)
-      setContent('')
-      setAsciiArt(null)
+      // Не очищаем контент и ASCII art сразу — покажем старые пока новые грузятся
       setGenerationTime(null)
       const startTime = performance.now()
 
-      // Generate ASCII art с защитой от race condition
-      llmService.generateAsciiArt(currentTopic, language)
-        .then((art) => {
-          if (!isCancelledRef.current && currentTopicRef.current === requestedTopic) {
-            setAsciiArt(art)
-          }
-        })
-        .catch((err) => {
-          if (!isCancelledRef.current && currentTopicRef.current === requestedTopic) {
-            console.error('Failed to generate ASCII art:', err)
-            const fallbackArt = createFallbackArt(currentTopic)
-            setAsciiArt(fallbackArt)
-          }
-        })
+      // Сначала генерируем ASCII art (быстро)
+      try {
+        const art = await llmService.generateAsciiArt(currentTopic, language)
+        if (!isCancelledRef.current && currentTopicRef.current === requestedTopic) {
+          setAsciiArt(art)
+        }
+      } catch (err) {
+        if (!isCancelledRef.current && currentTopicRef.current === requestedTopic) {
+          console.error('Failed to generate ASCII art:', err)
+          const fallbackArt = createFallbackArt(currentTopic)
+          setAsciiArt(fallbackArt)
+        }
+      }
 
-      // Stream content
+      // Потом стримим контент
       let accumulatedContent = ''
       try {
         for await (const chunk of llmService.streamDefinition(currentTopic, language)) {
           if (isCancelledRef.current) break
 
-          if (chunk.startsWith('Error:')) {
-            throw new Error(chunk.replace('Error: ', ''))
-          }
-          accumulatedContent += chunk
-          if (!isCancelledRef.current && currentTopicRef.current === requestedTopic) {
-            setContent(accumulatedContent)
+          const cleanChunk = chunk.replace('Error:', '').trim()
+          if (cleanChunk) {
+            accumulatedContent += cleanChunk
+            // Обновляем контент только если это всё ещё та же тема
+            if (!isCancelledRef.current && currentTopicRef.current === requestedTopic) {
+              setContent(accumulatedContent)
+            }
           }
         }
 
-        // Push to history after successful load
+        // Финальная очистка от мусора
         if (!isCancelledRef.current && currentTopicRef.current === requestedTopic) {
-          pushToHistory(currentTopic, accumulatedContent)
+          // Удаляем markdown и артефакты
+          const cleanedContent = cleanContent(accumulatedContent)
+          setContent(cleanedContent)
+          pushToHistory(currentTopic, cleanedContent)
         }
       } catch (e: unknown) {
         if (!isCancelledRef.current && currentTopicRef.current === requestedTopic) {
@@ -224,6 +226,46 @@ export function useWiki({
     return {
       art: `${topBorder}\n${middle}\n${bottomBorder}`,
     }
+  }
+
+  /**
+   * Очистка контента от markdown и артефактов
+   */
+  const cleanContent = (content: string): string => {
+    let cleaned = content
+    
+    // Удаляем markdown заголовки
+    cleaned = cleaned.replace(/^#+\s+/gm, '')
+    
+    // Удаляем markdown списки
+    cleaned = cleaned.replace(/^[\-\*•]\s+/gm, '')
+    
+    // Удаляем markdown bold/italic
+    cleaned = cleaned.replace(/\*\*([^*]+)\*\*/g, '$1')
+    cleaned = cleaned.replace(/\*([^*]+)\*/g, '$1')
+    cleaned = cleaned.replace(/__([^_]+)__/g, '$1')
+    cleaned = cleaned.replace(/_([^_]+)_/g, '$1')
+    
+    // Удаляем markdown code blocks
+    cleaned = cleaned.replace(/```[\s\S]*?```/g, '')
+    cleaned = cleaned.replace(/`([^`]+)`/g, '$1')
+    
+    // Удаляем markdown ссылки
+    cleaned = cleaned.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
+    
+    // Удаляем markdown изображения
+    cleaned = cleaned.replace(/!\[([^\]]*)\]\([^\)]+\)/g, '')
+    
+    // Удаляем HTML теги
+    cleaned = cleaned.replace(/<[^>]+>/g, '')
+    
+    // Удаляем лишние пробелы и новые строки
+    cleaned = cleaned.replace(/\s+/g, ' ').trim()
+    
+    // Удаляем повторяющиеся слова (артефакты генерации)
+    cleaned = cleaned.replace(/\b(\w+)\s+\1\b/gi, '$1')
+    
+    return cleaned
   }
 
   return {
