@@ -16,10 +16,14 @@ export const ContentDisplay: React.FC<ContentDisplayProps> = ({
   const { t } = useTranslation()
 
   const processedContent = useMemo(() => {
+    // Разбиваем на слова и пробелы, сохраняя всё
     const words = content.split(/(\s+)/)
     return words.map((word, index) => {
-      const cleanWord = word.trim().replace(/[.,!?;:()[\]{}]/g, '')
-      if (cleanWord.length > 2 && !/^\d+$/.test(cleanWord)) {
+      // Очищаем слово от знаков препинания для клика
+      const cleanWord = word.trim().replace(/[.,!?;:()[\]{}"«»]/g, '')
+      
+      // Делаем кликабельными ВСЕ слова (кроме пробелов и пустых строк)
+      if (cleanWord.length > 0 && !/^\s*$/.test(word)) {
         return (
           <span
             key={index}
@@ -34,11 +38,13 @@ export const ContentDisplay: React.FC<ContentDisplayProps> = ({
               }
             }}
             aria-label={`${t('words.clickToExplore')}: ${cleanWord}`}
+            title={`Клик: ${cleanWord}`}
           >
             {word}
           </span>
         )
       }
+      // Возвращаем пробелы как есть
       return <span key={index}>{word}</span>
     })
   }, [content, onWordClick, t])

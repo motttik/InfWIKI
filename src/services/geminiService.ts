@@ -74,8 +74,9 @@ export async function* streamDefinition(
     return
   }
 
-  const promptRu = `Дай краткое, энциклопедическое определение термина "${topic}". Будь информативным и нейтральным. Не используй markdown, заголовки или специальное форматирование. Ответь только текстом определения.`
-  const promptEn = `Provide a concise, encyclopedia-style definition for the term: "${topic}". Be informative and neutral. Do not use markdown, titles, or special formatting. Respond with only the definition text.`
+  // Усиленный промпт с явным указанием языка
+  const promptRu = `Дай краткое, энциклопедическое определение термина "${topic}". Будь информативным и нейтральным. ОТВЕЧАЙ СТРОГО НА РУССКОМ ЯЗЫКЕ. Не используй markdown, заголовки или специальное форматирование. Ответь только текстом определения. НЕ ИСПОЛЬЗУЙ АНГЛИЙСКИЕ СЛОВА.`
+  const promptEn = `Provide a concise, encyclopedia-style definition for the term: "${topic}". Be informative and neutral. Respond ONLY in English. Do not use markdown, titles, or special formatting. Respond with only the definition text. NO RUSSIAN WORDS.`
 
   const prompt = language === 'ru' ? promptRu : promptEn
 
