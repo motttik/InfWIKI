@@ -267,8 +267,12 @@ export function useWiki({
     // Удаляем HTML теги
     cleaned = cleaned.replace(/<[^>]+>/g, '')
     
-    // Удаляем лишние пробелы и новые строки
-    cleaned = cleaned.replace(/\s+/g, ' ').trim()
+    // Нормализуем множественные пробелы (но сохраняем одиночные!)
+    cleaned = cleaned.replace(/[ \t]+/g, ' ')
+    
+    // Удаляем лишние новые строки (но сохраняем структуру)
+    cleaned = cleaned.replace(/\n\s*\n/g, '\n')
+    cleaned = cleaned.trim()
     
     // Удаляем повторяющиеся слова (артефакты генерации)
     cleaned = cleaned.replace(/\b(\w+)\s+\1\b/gi, '$1')
