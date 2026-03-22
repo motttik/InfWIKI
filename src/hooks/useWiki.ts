@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { streamDefinition, generateAsciiArt, getRandomTopic } from '../services/geminiService'
+import { createLLMService, getRandomTopic, type LLMProviderConfig } from '../services/llmService'
 import type { AsciiArtData, Language } from '../types'
 import { useNavigationHistory } from './useNavigationHistory'
 import { useBookmarks } from './useBookmarks'
@@ -7,15 +7,23 @@ import { useBookmarks } from './useBookmarks'
 interface UseWikiOptions {
   initialTopic?: string
   language?: Language
+  llmConfig?: LLMProviderConfig
 }
 
-export function useWiki({ initialTopic = 'Hypertext', language = 'en' }: UseWikiOptions = {}) {
+export function useWiki({ 
+  initialTopic = 'Hypertext', 
+  language = 'en',
+  llmConfig
+}: UseWikiOptions = {}) {
   const [currentTopic, setCurrentTopic] = useState<string>(initialTopic)
   const [content, setContent] = useState<string>('')
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
   const [asciiArt, setAsciiArt] = useState<AsciiArtData | null>(null)
   const [generationTime, setGenerationTime] = useState<number | null>(null)
+
+  // Создаём LLM сервис с нужной конфигурацией
+  const llmService = useRef(createLLMService(llmConfig)).current
 
   const isCancelledRef = useRef(false)
   const { pushToHistory, goBack, goForward, canGoBack, canGoForward } = useNavigationHistory()
@@ -35,7 +43,7 @@ export function useWiki({ initialTopic = 'Hypertext', language = 'en' }: UseWiki
       const startTime = performance.now()
 
       // Generate ASCII art
-      generateAsciiArt(currentTopic, language)
+      llmService.generateAsciiArt(currentTopic, language)
         .then((art) => {
           if (!isCancelledRef.current) {
             setAsciiArt(art)
@@ -52,7 +60,7 @@ export function useWiki({ initialTopic = 'Hypertext', language = 'en' }: UseWiki
       // Stream content
       let accumulatedContent = ''
       try {
-        for await (const chunk of streamDefinition(currentTopic, language)) {
+        for await (const chunk of llmService.streamDefinition(currentTopic, language)) {
           if (isCancelledRef.current) break
 
           if (chunk.startsWith('Error:')) {
@@ -87,7 +95,7 @@ export function useWiki({ initialTopic = 'Hypertext', language = 'en' }: UseWiki
     return () => {
       isCancelledRef.current = true
     }
-  }, [currentTopic, language, pushToHistory])
+  }, [currentTopic, language, llmService, pushToHistory])
 
   const handleTopicChange = useCallback((topic: string) => {
     const newTopic = topic.trim()
