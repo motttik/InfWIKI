@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { createLLMService, getRandomTopic, type LLMProviderConfig } from '../services/llmService'
+import { createLLMService, createLLMServiceAsync, getRandomTopic, type LLMProviderConfig } from '../services/llmService'
 import type { AsciiArtData, Language } from '../types'
 import { useNavigationHistory } from './useNavigationHistory'
 import { useBookmarks } from './useBookmarks'
@@ -8,12 +8,14 @@ interface UseWikiOptions {
   initialTopic?: string
   language?: Language
   llmConfig?: LLMProviderConfig
+  autoDetectProvider?: boolean  // Авто-определение провайдера при инициализации
 }
 
 export function useWiki({
   initialTopic = 'Гармония',
   language = 'ru',
-  llmConfig
+  llmConfig,
+  autoDetectProvider = true  // По умолчанию включено авто-определение
 }: UseWikiOptions = {}) {
   const [currentTopic, setCurrentTopic] = useState<string>(initialTopic)
   const [content, setContent] = useState<string>('')
@@ -21,17 +23,58 @@ export function useWiki({
   const [error, setError] = useState<string | null>(null)
   const [asciiArt, setAsciiArt] = useState<AsciiArtData | null>(null)
   const [generationTime, setGenerationTime] = useState<number | null>(null)
+  // providerStatus можно использовать для UI индикатора
+  const [_providerStatus, setProviderStatus] = useState<string>('Инициализация...')
 
   // Ref для защиты от race conditions
   const currentTopicRef = useRef<string>(currentTopic)
   const requestedTopicRef = useRef<string>(initialTopic)
 
   // Создаём LLM сервис с нужной конфигурацией
-  const llmService = useRef(createLLMService(llmConfig)).current
-
+  const llmServiceRef = useRef<ReturnType<typeof createLLMService> | null>(null)
+  
   const isCancelledRef = useRef(false)
   const { pushToHistory, goBack, goForward, canGoBack, canGoForward } = useNavigationHistory()
   const { addBookmark, removeBookmark, isBookmarked } = useBookmarks()
+
+  // Инициализация LLM сервиса с авто-определением
+  useEffect(() => {
+    let cancelled = false
+    
+    const initLLMService = async () => {
+      try {
+        if (autoDetectProvider) {
+          // Асинхронная инициализация с проверкой доступности
+          const service = await createLLMServiceAsync(llmConfig)
+          if (!cancelled) {
+            llmServiceRef.current = service
+            setProviderStatus('Готов')
+          }
+        } else {
+          // Синхронная инициализация (быстрая, без проверки)
+          const service = createLLMService(llmConfig)
+          if (!cancelled) {
+            llmServiceRef.current = service
+            setProviderStatus('Готов (без проверки)')
+          }
+        }
+      } catch (err) {
+        console.error('Failed to initialize LLM service:', err)
+        if (!cancelled) {
+          // Fallback на demo режим
+          const { createLLMService } = await import('../services/llmService')
+          llmServiceRef.current = createLLMService({ provider: 'gemini' })
+          setProviderStatus('Demo режим')
+        }
+      }
+    }
+    
+    initLLMService()
+    
+    return () => {
+      cancelled = true
+    }
+  }, [autoDetectProvider, llmConfig])
 
   // Обновляем ref при смене темы
   useEffect(() => {
@@ -45,9 +88,17 @@ export function useWiki({
       return
     }
 
+    // Проверка что LLM сервис инициализирован
+    if (!llmServiceRef.current) {
+      console.warn('LLM service not initialized yet, waiting...')
+      return
+    }
+
     const requestedTopic = currentTopic
     requestedTopicRef.current = requestedTopic
     isCancelledRef.current = false
+
+    const llmService = llmServiceRef.current  // Сохраняем ссылку для использования
 
     const fetchContentAndArt = async () => {
       setIsLoading(true)
@@ -112,7 +163,7 @@ export function useWiki({
     return () => {
       isCancelledRef.current = true
     }
-  }, [currentTopic, language, llmService, pushToHistory])
+  }, [currentTopic, language, pushToHistory])
 
   const handleTopicChange = useCallback((topic: string) => {
     const newTopic = topic.trim()

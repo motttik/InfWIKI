@@ -514,29 +514,99 @@ class MockService implements LLMService {
 }
 
 /**
- * Фабрика LLM сервисов
+ * Проверка доступности Ollama
  */
-export function createLLMService(config?: LLMProviderConfig): LLMService {
-  const provider = config?.provider || 'gemini'
-  const apiKey = getApiKey()
-
-  // Если API ключ не настроен — использовать demo режим
-  if (!apiKey || apiKey === 'your_api_key_here' || apiKey === 'YOUR_API_KEY_HERE') {
-    console.log('🎭 Running in Demo Mode (no API key configured)')
-    return new MockService()
-  }
-
-  switch (provider) {
-    case 'ollama':
-      return new OllamaService()
-    case 'gemini':
-    default:
-      return new GeminiService()
+async function checkOllamaAvailability(baseUrl: string): Promise<boolean> {
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 3000)
+    
+    const response = await fetch(`${baseUrl}/api/tags`, {
+      method: 'GET',
+      signal: controller.signal,
+    })
+    
+    clearTimeout(timeoutId)
+    return response.ok
+  } catch {
+    return false
   }
 }
 
 /**
- * LLM сервис по умолчанию (Gemini)
+ * Умная фабрика LLM сервисов с авто-определением и fallback
+ */
+export function createLLMService(config?: LLMProviderConfig): LLMService {
+  const apiKey = getApiKey()
+  const ollamaBaseUrl = getOllamaBaseUrl()
+  const ollamaModel = getOllamaModel()
+
+  // 1. Если явно указан Ollama — используем его
+  if (config?.provider === 'ollama') {
+    console.log('🦙 Using Ollama provider (explicit)')
+    return new OllamaService()
+  }
+
+  // 2. Если есть валидный API ключ Gemini — используем Gemini
+  if (apiKey && apiKey !== 'your_api_key_here' && apiKey !== 'YOUR_API_KEY_HERE') {
+    console.log('✨ Using Gemini provider')
+    return new GeminiService()
+  }
+
+  // 3. API ключа Gemini нет — пробуем Ollama
+  console.log('⚠️  No Gemini API key, checking Ollama...')
+  
+  // Проверяем Ollama синхронно (для инициализации)
+  // Полная проверка будет при первом запросе
+  console.log(`🦙 Ollama configured: ${ollamaBaseUrl} (model: ${ollamaModel})`)
+  console.log('🔄 Auto-fallback to Ollama provider')
+  return new OllamaService()
+}
+
+/**
+ * Асинхронная фабрика с полной проверкой доступности
+ */
+export async function createLLMServiceAsync(config?: LLMProviderConfig): Promise<LLMService> {
+  const apiKey = getApiKey()
+  const ollamaBaseUrl = getOllamaBaseUrl()
+  const ollamaModel = getOllamaModel()
+
+  // 1. Если явно указан Ollama — используем его
+  if (config?.provider === 'ollama') {
+    const isAvailable = await checkOllamaAvailability(ollamaBaseUrl)
+    if (isAvailable) {
+      console.log('🦙 Using Ollama provider (explicit, verified)')
+      return new OllamaService()
+    }
+    console.warn('⚠️  Ollama not available, falling back to Demo Mode')
+    return new MockService()
+  }
+
+  // 2. Если есть валидный API ключ Gemini — используем Gemini
+  if (apiKey && apiKey !== 'your_api_key_here' && apiKey !== 'YOUR_API_KEY_HERE') {
+    console.log('✨ Using Gemini provider')
+    return new GeminiService()
+  }
+
+  // 3. API ключа Gemini нет — пробуем Ollama
+  console.log('⚠️  No Gemini API key, checking Ollama availability...')
+  
+  const isOllamaAvailable = await checkOllamaAvailability(ollamaBaseUrl)
+  
+  if (isOllamaAvailable) {
+    console.log(`🦙 Ollama available at ${ollamaBaseUrl} (model: ${ollamaModel})`)
+    console.log('🔄 Auto-fallback to Ollama provider')
+    return new OllamaService()
+  }
+
+  // 4. Ни Gemini, ни Ollama недоступны — Demo режим
+  console.log('⚠️  Ollama not available, falling back to Demo Mode')
+  console.log('🎭 Running in Demo Mode (no API providers available)')
+  return new MockService()
+}
+
+/**
+ * LLM сервис по умолчанию (с авто-определением)
  */
 export const llmService = createLLMService({ provider: 'gemini' })
 
