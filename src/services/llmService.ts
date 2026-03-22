@@ -249,16 +249,58 @@ Return ONLY the raw JSON object, no additional text. The response must start wit
 class OllamaService implements LLMService {
   private baseUrl: string
   private model: string
+  private readonly DEFAULT_TIMEOUT = 30000 // 30 секунд
 
   constructor() {
     this.baseUrl = getOllamaBaseUrl()
     this.model = getOllamaModel()
   }
 
+  /**
+   * Создаёт AbortController с таймаутом
+   */
+  private createTimeoutController(): { controller: AbortController; timeoutId: NodeJS.Timeout } {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), this.DEFAULT_TIMEOUT)
+    return { controller, timeoutId }
+  }
+
+  /**
+   * Форматирует ошибку для пользователя
+   */
+  private formatErrorMessage(error: unknown, context: string): string {
+    if (error instanceof TypeError) {
+      // Network errors: connection refused, DNS failure, etc.
+      if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
+        return `Не удалось подключиться к Ollama. Убедитесь, что сервер запущен на ${this.baseUrl}`
+      }
+      if (error.message.includes('ECONNREFUSED')) {
+        return `Ollama не запущен. Запустите: ollama serve`
+      }
+      if (error.message.includes('ETIMEDOUT') || error.message.includes('timeout')) {
+        return `Превышено время ожидания ответа от Ollama (>${this.DEFAULT_TIMEOUT}мс)`
+      }
+    }
+
+    if (error instanceof Error) {
+      if (error.message.includes('404')) {
+        return `Модель "${this.model}" не найдена. Установите: ollama pull ${this.model}`
+      }
+      if (error.message.includes('503')) {
+        return `Ollama перегружен. Попробуйте позже.`
+      }
+      return `${context}: ${error.message}`
+    }
+
+    return `${context}: Неизвестная ошибка`
+  }
+
   async *streamDefinition(topic: string, language: Language = 'en'): AsyncGenerator<string, void, undefined> {
     const promptRu = `Дай краткое, энциклопедическое определение термина "${topic}". Будь информативным и нейтральным. Не используй markdown, заголовки или специальное форматирование. Ответь только текстом определения.`
     const promptEn = `Provide a concise, encyclopedia-style definition for the term: "${topic}". Be informative and neutral. Do not use markdown, titles, or special formatting. Respond with only the definition text.`
     const prompt = language === 'ru' ? promptRu : promptEn
+
+    const { controller, timeoutId } = this.createTimeoutController()
 
     try {
       const response = await fetch(`${this.baseUrl}/api/generate`, {
@@ -269,7 +311,10 @@ class OllamaService implements LLMService {
           prompt,
           stream: true,
         }),
+        signal: controller.signal,
       })
+
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
         throw new Error(`Ollama API error: ${response.status} ${response.statusText}`)
@@ -293,8 +338,16 @@ class OllamaService implements LLMService {
           if (line.trim()) {
             try {
               const json = JSON.parse(line)
-              if (json.response) {
-                yield json.response
+
+              // Проверяем флаг завершения
+              if (json.done === true) {
+                return
+              }
+
+              // Поддержка обоих форматов: /api/generate (response) и /api/chat (message.content)
+              const chunk = json.response ?? json.message?.content
+              if (chunk) {
+                yield chunk
               }
             } catch {
               // Skip invalid JSON lines
@@ -303,10 +356,12 @@ class OllamaService implements LLMService {
         }
       }
     } catch (error) {
+      clearTimeout(timeoutId)
       console.error('Error streaming from Ollama:', error)
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.'
-      yield `Error: Could not generate content for "${topic}". ${errorMessage}`
-      throw new Error(errorMessage)
+
+      const userMessage = this.formatErrorMessage(error, 'Ошибка генерации определения')
+      yield userMessage
+      throw new Error(userMessage)
     }
   }
 
@@ -314,6 +369,8 @@ class OllamaService implements LLMService {
     const promptRu = `Назови одно случайное интересное русское слово или концепцию из двух слов. Только само слово, без лишнего текста.`
     const promptEn = `Generate a single, random, interesting English word or two-word concept. Only the word itself, no extra text.`
     const prompt = language === 'ru' ? promptRu : promptEn
+
+    const { controller, timeoutId } = this.createTimeoutController()
 
     try {
       const response = await fetch(`${this.baseUrl}/api/generate`, {
@@ -324,18 +381,23 @@ class OllamaService implements LLMService {
           prompt,
           stream: false,
         }),
+        signal: controller.signal,
       })
+
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
         throw new Error(`Ollama API error: ${response.status} ${response.statusText}`)
       }
 
       const json = await response.json()
-      return json.response?.trim() || getRandomTopic(language)
+      return json.response?.trim() || json.message?.content?.trim() || getRandomTopic(language)
     } catch (error) {
+      clearTimeout(timeoutId)
       console.error('Error getting random word from Ollama:', error)
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.'
-      throw new Error(`Could not get random word: ${errorMessage}`)
+
+      const userMessage = this.formatErrorMessage(error, 'Ошибка получения случайного слова')
+      throw new Error(userMessage)
     }
   }
 
@@ -344,6 +406,8 @@ class OllamaService implements LLMService {
   - Palette: │─┌┐└┘├┤┬┴┼►◄▲▼○●◐◑░▒▓█▀▄■□▪▫★☆♦♠♣♥⟨⟩/\\_|
   - Shape mirrors concept - make the visual form embody the word's essence
   - Return ONLY the ASCII art as a single string with newlines, no additional text`
+
+    const { controller, timeoutId } = this.createTimeoutController()
 
     try {
       const response = await fetch(`${this.baseUrl}/api/generate`, {
@@ -354,14 +418,17 @@ class OllamaService implements LLMService {
           prompt: artPrompt,
           stream: false,
         }),
+        signal: controller.signal,
       })
+
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
         throw new Error(`Ollama API error: ${response.status} ${response.statusText}`)
       }
 
       const json = await response.json()
-      const art = json.response?.trim() || ''
+      const art = json.response?.trim() || json.message?.content?.trim() || ''
 
       if (!art) {
         throw new Error('Empty response from Ollama')
@@ -369,8 +436,11 @@ class OllamaService implements LLMService {
 
       return { art }
     } catch (error) {
+      clearTimeout(timeoutId)
       console.error('Error generating ASCII art from Ollama:', error)
-      throw new Error(`Could not generate ASCII art: ${error instanceof Error ? error.message : 'Unknown error'}`)
+
+      const userMessage = this.formatErrorMessage(error, 'Ошибка генерации ASCII арта')
+      throw new Error(userMessage)
     }
   }
 }
