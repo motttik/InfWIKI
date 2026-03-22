@@ -23,12 +23,15 @@ export function useWiki({
   const [error, setError] = useState<string | null>(null)
   const [asciiArt, setAsciiArt] = useState<AsciiArtData | null>(null)
   const [generationTime, setGenerationTime] = useState<number | null>(null)
-  // providerStatus можно использовать для UI индикатора
+  // _providerStatus можно использовать для UI индикатора
   const [_providerStatus, setProviderStatus] = useState<string>('Инициализация...')
 
   // Ref для защиты от race conditions
   const currentTopicRef = useRef<string>(currentTopic)
   const requestedTopicRef = useRef<string>(initialTopic)
+  
+  // Кэш ASCII артов — чтобы не перегенерировать
+  const asciiArtCache = useRef<Map<string, AsciiArtData>>(new Map())
 
   // Создаём LLM сервис с нужной конфигурацией
   const llmServiceRef = useRef<ReturnType<typeof createLLMService> | null>(null)
@@ -103,25 +106,32 @@ export function useWiki({
     const fetchContentAndArt = async () => {
       setIsLoading(true)
       setError(null)
-      // Не очищаем контент и ASCII art сразу — покажем старые пока новые грузятся
       setGenerationTime(null)
       const startTime = performance.now()
 
-      // Сначала генерируем ASCII art (быстро)
-      try {
-        const art = await llmService.generateAsciiArt(currentTopic, language)
-        if (!isCancelledRef.current && currentTopicRef.current === requestedTopic) {
-          setAsciiArt(art)
-        }
-      } catch (err) {
-        if (!isCancelledRef.current && currentTopicRef.current === requestedTopic) {
-          console.error('Failed to generate ASCII art:', err)
-          const fallbackArt = createFallbackArt(currentTopic)
-          setAsciiArt(fallbackArt)
+      // Проверяем кэш ASCII артов
+      const cachedArt = asciiArtCache.current.get(currentTopic)
+      if (cachedArt) {
+        setAsciiArt(cachedArt)
+      } else {
+        // Генерируем новый и кэшируем
+        try {
+          const art = await llmService.generateAsciiArt(currentTopic, language)
+          if (!isCancelledRef.current && currentTopicRef.current === requestedTopic) {
+            setAsciiArt(art)
+            asciiArtCache.current.set(currentTopic, art)
+          }
+        } catch (err) {
+          if (!isCancelledRef.current && currentTopicRef.current === requestedTopic) {
+            console.error('Failed to generate ASCII art:', err)
+            const fallbackArt = createFallbackArt(currentTopic)
+            setAsciiArt(fallbackArt)
+            asciiArtCache.current.set(currentTopic, fallbackArt)
+          }
         }
       }
 
-      // Потом стримим контент
+      // Стримим контент
       let accumulatedContent = ''
       try {
         for await (const chunk of llmService.streamDefinition(currentTopic, language)) {
@@ -130,7 +140,6 @@ export function useWiki({
           const cleanChunk = chunk.replace('Error:', '').trim()
           if (cleanChunk) {
             accumulatedContent += cleanChunk
-            // Обновляем контент только если это всё ещё та же тема
             if (!isCancelledRef.current && currentTopicRef.current === requestedTopic) {
               setContent(accumulatedContent)
             }
@@ -139,7 +148,6 @@ export function useWiki({
 
         // Финальная очистка от мусора
         if (!isCancelledRef.current && currentTopicRef.current === requestedTopic) {
-          // Удаляем markdown и артефакты
           const cleanedContent = cleanContent(accumulatedContent)
           setContent(cleanedContent)
           pushToHistory(currentTopic, cleanedContent)
